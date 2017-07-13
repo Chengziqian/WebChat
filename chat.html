@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.2.1.min.js"></script>
+    <script src="js/variable.js"></script>
+    <link href="css/main.css" rel="stylesheet">
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <fieldset style="display:inline-block;width:30%;vertical-align:top;">
+      <legend>Online List</legend>
+      <div id="list"></div>
+    </fieldset>
+    <fieldset style="display:inline-block;width:60%;vertical-align:top;">
+      <legend>Chat Body</legend>
+      <div><span style="color:green" id="user"></span><button id="logout">登出</button></div>
+      <div id="chat" style="position :relative"></div>
+      <fieldset>
+        <legend>Send Message</legend>
+        <input id="message" type="text" name="chat-message"/>
+        <button id="send">Send</button>
+      </fieldset>
+    </fieldset>
+    <!-- <button id="get">Get</button> -->
+  </body>
+
+  <script>
+  $(document).ready(function() {
+    function GetMessage(message_id) {
+      $.ajax({
+        url : chat_url,
+        type : 'GET',
+        data : {from_id : message_id},
+        success : function(data) {
+          if (data == 'NULL'){
+            $('#chat').append('');
+          }
+          else if (data == 'REPEAT') {
+            alert('您已在别处登录！');
+            window.location.href = 'index.html';
+          }
+          else {
+            var json = JSON.parse(data);
+            //$('#chat').append("<div>"+message_id+"--origin <div>");
+            message_id = json[json.length-1].id;
+            for (var i = 0; i<json.length; i++){
+              if(json[i].status == 0){
+                $('#chat').append(
+                  '<div class="other"><fieldset><legend>['+json[i].username+']  '+json[i].time+'</legend><div>'+json[i].message+'</div></fieldset></div>'
+                );
+              }
+              else {
+                $('#chat').append(
+                  '<div class="own"><fieldset><legend>['+json[i].username+']  '+json[i].time+'</legend><div>'+json[i].message+'</div></fieldset></div>'
+                );
+              }
+            }
+            //$('#chat').append("<div>"+message_id+"--over <div>");
+            id = message_id;
+          }
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown) {
+          alert(XMLHttpRequest.status);
+          window.location.href = 'index.html';
+        }
+      });
+    }
+    function PostMessage() {
+      $.post('ajax/chat.php', {message : $('#message').val()}, function() {
+      });
+    }
+    var id = 0;
+    $.ajax({
+      url : getuser_url,
+      type : 'GET',
+      success : function(data) {
+        $('#user').text('当前用户：'+data);
+      }
+    });
+
+    GetMessage(id);
+    $.ajax({
+      url : getlist_url,
+      type : 'GET',
+      success : function(data) {
+        //alert(data);
+        var json = JSON.parse(data);
+        for (var i = 0; i<json.length; i++){
+          $('#list').append('<div style="color:darkgreen">>>'+json[i].username+'</div>');
+        }
+      }
+    });
+
+    $('#send').click(function() {
+      PostMessage();
+      GetMessage(id);
+    });
+
+    // $('#get').click(function() {
+    //   $.get('ajax/chat.php',{from_id : 0}, function(data){
+    //     if (data == "NULL"){
+    //       alert("yes");
+    //     }
+    //     else {
+    //       var json = JSON.parse(data);
+    //       for (var i=0; i<json.length; i++){
+    //         $('#chat').append("<div>"+json[i].message+"<div>");
+    //       }
+    //     }
+    //
+    //   });
+    // });
+
+    setInterval(function(){
+      GetMessage(id);
+
+      $.ajax({
+        url : getlist_url,
+        type : 'GET',
+        success : function(data) {
+          $('#list').text('');
+          //alert(data);
+          var json = JSON.parse(data);
+          for (var i = 0; i<json.length; i++){
+            $('#list').append('<div style="color:darkgreen">>>'+json[i].username+'</div>');
+          }
+        }
+      });
+
+    }, 1000);
+
+    $('#logout').click(function() {
+      $.ajax({
+        url : logout_url,
+        type : 'GET',
+        success : function(data){
+          var json = JSON.parse(data);
+          if (json.status == 'true'){
+            alert('Logout successfully');
+            window.location.href = 'index.html';
+          }
+        },
+        error : function(XMLHttpRequest, textStatus, errorThrown) {
+          alert(XMLHttpRequest.status);
+        }
+      });
+    })
+
+
+
+  });
+  </script>
+</html>
